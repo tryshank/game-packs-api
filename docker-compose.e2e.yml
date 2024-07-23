@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpassword
+      POSTGRES_DB: testdb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    ports:
+      - '5432:5432'
+
+  app:
+    container_name: packs-api-e2e-test
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: /usr/src/app/wait-for-it.sh db:5432 -- cross-env NODE_ENV=test jest --config ./jest-e2e.json
+    ports:
+      - '8080:8080'
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://testuser:testpassword@db:5432/testdb
+      APP_PORT: 8080
+
+volumes:
+  pgdata:
